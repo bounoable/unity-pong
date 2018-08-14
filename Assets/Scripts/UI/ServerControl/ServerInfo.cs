@@ -1,9 +1,9 @@
-using GameNet;
 using Pong.Core;
 using UnityEngine;
+using Pong.Network;
 using UnityEngine.UI;
 
-namespace Pong.UI
+namespace Pong.UI.ServerControl
 {
     class ServerInfo: MonoBehaviour
     {
@@ -23,9 +23,9 @@ namespace Pong.UI
             if (server == null)
                 return;
 
-            _ipText.text = server.IPAddress.ToString();
-            _tcpPortText.text = server.Config.Port.ToString();
-            _udpPortText.text = server.Config.LocalUdpPort.ToString();
+            _ipText.text = server.BaseServer.IPAddress.ToString();
+            _tcpPortText.text = server.BaseServer.Config.Port.ToString();
+            _udpPortText.text = server.BaseServer.Config.LocalUdpPort.ToString();
         }
     }
 }

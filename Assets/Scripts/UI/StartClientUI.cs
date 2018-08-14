@@ -10,7 +10,7 @@ namespace Pong.UI
     {
         [SerializeField] Toggle _actAsServerToggle;
         [SerializeField] Text _serverUdpPortHeading;
-        [SerializeField] InputField _serverUdpPortInput;
+        [SerializeField] UnityEngine.UI.InputField _serverUdpPortInput;
 
         override protected void Awake()
         {
@@ -42,17 +42,21 @@ namespace Pong.UI
 
                 try {
                     game.CreateServer(ip, tcpPort, serverUdpPort);
+                    game.Server.Start();
                 } catch (Exception e) {
+                    game.StopServer();
                     _messageText.text = e.Message;
                     return;
                 }
             }
 
             try {
-                game.CreateClient(ip, tcpPort, udpPort);
-                game.LoadLobby().ConfigureAwait(false);
+                game.CreateClient(udpPort);
+                game.Client.Connect(ip, tcpPort);
+                game.LoadLobby();
             } catch (Exception e) {
                 game.StopServer();
+                game.StopClient();
                 
                 _messageText.text = e.Message;
             }

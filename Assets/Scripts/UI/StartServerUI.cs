@@ -27,7 +27,6 @@ namespace Pong.UI
 
             try {
                 game.CreateServer(ip, tcpPort, udpPort);
-
                 game.LoadServerControl().ConfigureAwait(false);
             } catch (Exception e) {
                 _messageText.text = e.Message;

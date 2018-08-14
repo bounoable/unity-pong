@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityInput = UnityEngine.UI.InputField;
 
 namespace Pong.UI
 {
@@ -23,9 +24,9 @@ namespace Pong.UI
 		[SerializeField] protected EventButton _startBtn;
 		[SerializeField] protected Text _messageText;
 
-		[SerializeField] protected InputField _ipInput;
-        [SerializeField] protected InputField _tcpPortInput;
-        [SerializeField] protected InputField _udpPortInput;
+		[SerializeField] protected UnityInput _ipInput;
+        [SerializeField] protected UnityInput _tcpPortInput;
+        [SerializeField] protected UnityInput _udpPortInput;
 
 		virtual protected void Awake()
 		{

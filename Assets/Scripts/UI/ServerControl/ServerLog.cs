@@ -1,11 +1,11 @@
 using System;
-using GameNet;
 using Pong.Core;
 using UnityEngine;
+using Pong.Network;
 using UnityEngine.UI;
 using System.Collections.Generic;
 
-namespace Pong.UI
+namespace Pong.UI.ServerControl
 {
     class ServerLog: MonoBehaviour
     {
@@ -25,7 +25,8 @@ namespace Pong.UI
             if (Server == null)
                 return;
         
-            Server.ServerStopped += () => Log("Server stopped");
+            Server.BaseServer.ServerStarted += () => Log("Server started");
+            Server.BaseServer.ServerStopped += () => Log("Server stopped");
         }
 
         public void Log(string message)

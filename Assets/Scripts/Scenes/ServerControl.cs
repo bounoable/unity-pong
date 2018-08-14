@@ -1,6 +1,7 @@
 using Pong.UI;
 using Pong.Core;
 using UnityEngine;
+using Pong.UI.ServerControl;
 using System.Threading.Tasks;
 
 namespace Pong.Scenes
@@ -24,8 +25,11 @@ namespace Pong.Scenes
             if (Game.Server == null) {
                 Game.LoadMainMenu();
             }
+        }
 
-            _log.Log("Server started");
+        void Start()
+        {
+            Game.Server.Start();
         }
 
         void StopServer()

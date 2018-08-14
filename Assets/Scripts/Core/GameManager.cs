@@ -1,5 +1,5 @@
-using GameNet;
 using UnityEngine;
+using Pong.Network;
 using System.Threading.Tasks;
 using UnityEngine.SceneManagement;
 
@@ -17,7 +17,7 @@ namespace Pong.Core
         public static GameManager Instance => GetInstance();
         static GameManager _instance;
 
-        public GameNetFactory NetworkFactory { get; } = new GameNetFactory();
+        public GameNet.GameNetFactory NetworkFactory { get; } = new GameNet.GameNetFactory();
 
         public Server Server { get; private set; }
         public Client Client { get; private set; }
@@ -43,12 +43,9 @@ namespace Pong.Core
         /// <returns>The game server.</returns>
         public Server CreateServer(string ip, ushort tcpPort, ushort udpPort)
         {
-            Server server = NetworkFactory.CreateServer(ip, tcpPort, udpPort);
+            Server = new Server(NetworkFactory.CreateServer(ip, tcpPort, udpPort));
 
-            server.Start();
-            Server = server;
-
-            return server;
+            return Server;
         }
 
         public void StopServer()
@@ -64,31 +61,24 @@ namespace Pong.Core
         /// <param name="tcpPort">The server's TCP port.</param>
         /// <param name="udpPort">The UDP port the client uses.</param>
         /// <returns>The game client.</returns>
-        public Client CreateClient(string ip, ushort tcpPort, ushort udpPort)
+        public Client CreateClient(ushort udpPort)
         {
-            Client client = NetworkFactory.CreateClient(udpPort);
+            Client = new Client(NetworkFactory.CreateClient(udpPort));
 
-            client.Connect(ip, tcpPort);
-            Client = client;
-
-            return client;
+            return Client;
         }
 
-        public void StopClient()
+        async public Task StopClient()
         {
-            Client?.Disconnect();
+            await Client?.Disconnect();
             Client = null;
+            StopServer();
         }
         
         async public Task PrepareQuit()
         {
-            if (Client != null) {
-                await Client.Disconnect();
-            }
-
-            Server?.Stop();
-
-            Debug.ClearDeveloperConsole();
+            await StopClient();
+            StopServer();
         }
 
         async public Task LoadScene(Scene scene)

@@ -10,6 +10,17 @@ namespace Pong.UI
 	{
 		public event Action Click = delegate {};
 
+		public bool Interactable
+		{
+			get { return _button.interactable; }
+			set
+			{
+				if (_button) {
+					_button.interactable = value;
+				}
+			}
+		}
+
 		UnityEngine.UI.Button _button;
 
 		void Awake()
