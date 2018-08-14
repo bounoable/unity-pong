@@ -25,12 +25,12 @@ namespace Pong.UI
         }
 
         void OnActAsServerChanged(bool actAsServer)
-        {
-            _serverUdpPortHeading.gameObject.SetActive(actAsServer);
-        }
+            => _serverUdpPortHeading.gameObject.SetActive(actAsServer);
 
         void StartClient()
         {
+            _messageText.text = null;
+
             GameManager game = GameManager.Instance;
 
             string ip = _ipInput.text;
@@ -52,6 +52,8 @@ namespace Pong.UI
                 game.CreateClient(ip, tcpPort, udpPort);
                 game.LoadLobby().ConfigureAwait(false);
             } catch (Exception e) {
+                game.StopServer();
+                
                 _messageText.text = e.Message;
             }
         }

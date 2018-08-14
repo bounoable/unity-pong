@@ -17,6 +17,8 @@ namespace Pong.UI
 
         void StartServer()
         {
+            _messageText.text = null;
+            
             GameManager game = GameManager.Instance;
 
             string ip = _ipInput.text;
