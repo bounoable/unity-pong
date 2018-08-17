@@ -1,13 +1,18 @@
+using System;
+using Pong.Core;
 using UnityEngine;
 using System.Linq;
 using Pong.Network;
 using UnityEngine.UI;
+using System.Collections;
 using System.Collections.Generic;
 
 namespace Pong.UI.Lobby
 {
     class PlayerList: MonoBehaviour
     {
+        public event Action<Player> PlayerChallenged = delegate {};
+
         [SerializeField] Text _headingText;
         [SerializeField] RectTransform _listContent;
         [SerializeField] PlayerButton _playerBtnPrefab;
@@ -15,6 +20,8 @@ namespace Pong.UI.Lobby
 
         readonly HashSet<Player> _players = new HashSet<Player>();
         readonly HashSet<PlayerButton> _playerButtons = new HashSet<PlayerButton>();
+
+        Player _selectedPlayer;
         
         void Awake()
         {
@@ -22,6 +29,12 @@ namespace Pong.UI.Lobby
                 Destroy(gameObject);
                 return;
             }
+
+            _challengeBtn.Click += () => {
+                if (_selectedPlayer != null) {
+                    PlayerChallenged(_selectedPlayer);
+                }
+            };
         }
 
         void Start()
@@ -31,22 +44,24 @@ namespace Pong.UI.Lobby
 
         public void AddPlayer(Player player)
         {
-            if (_players.Contains(player))
+            if (player == null || _players.Contains(player))
                 return;
-            
+
             PlayerButton button = Instantiate(_playerBtnPrefab) as PlayerButton;
             button.transform.SetParent(_listContent);
             button.transform.localScale = Vector3.one;
             button.Player = player;
+            button.Click += p => Dispatcher.Instance.Enqueue(() => OnPlayerSelected(p));
+
+            _players.Add(player);
             _playerButtons.Add(button);
-            _challengeBtn.Interactable = true;
 
             UpdateHeading();
         }
 
         public void RemovePlayer(Player player)
         {
-            if (!_players.Contains(player))
+            if (player == null || !_players.Contains(player))
                 return;
             
             _playerButtons.RemoveWhere(button => {
@@ -69,5 +84,11 @@ namespace Pong.UI.Lobby
         }
 
         void UpdateHeading() => _headingText.text = $"Players ({_players.Count})";
+
+        void OnPlayerSelected(Player player)
+        {
+            _selectedPlayer = player;
+            _challengeBtn.Interactable = player != null && player != GameManager.Instance.Client.Player;
+        }
     }
 }

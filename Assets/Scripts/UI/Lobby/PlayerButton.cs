@@ -5,10 +5,9 @@ using UnityEngine.UI;
 
 namespace Pong.UI.Lobby
 {
-    [RequireComponent(typeof(Button))]
-    class PlayerButton: MonoBehaviour
+    class PlayerButton: EventButton
     {
-        public event EventHandler<Player> Click = delegate {};
+        new public event Action<Player> Click = delegate {};
 
         Player _player;
         public Player Player
@@ -18,20 +17,34 @@ namespace Pong.UI.Lobby
                 return _player;
             }
             set
-            {
+            {   
                 _player = value;
                 _buttonText.text = _player.Name;
             }
         }
 
-        Button _button;
+        bool _isSelected;
+        public bool IsSelected
+        {
+            get
+            {
+                return _isSelected;
+            }
+            set
+            {
+                _isSelected = value;
+                _buttonText.fontStyle = value ? FontStyle.Bold : FontStyle.Normal;
+            }
+        }
+
         Text _buttonText;
 
-        void Awake()
+        override protected void Awake()
         {
-            _button = GetComponent<Button>();
+            base.Awake();
+            
             _buttonText = _button.GetComponentInChildren<Text>();
-            _button.onClick.AddListener(() => Click(this, Player));
+            base.Click += () => Click(Player);
         }
     }
 }

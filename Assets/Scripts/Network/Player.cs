@@ -10,5 +10,8 @@ namespace Pong.Network
             Id = id;
             Name = name;
         }
+
+        public GamePlayer CreateGamePlayer()
+            => new GamePlayer(Id, Name);
     }
 }

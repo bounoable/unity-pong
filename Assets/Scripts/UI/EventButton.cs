@@ -21,9 +21,9 @@ namespace Pong.UI
 			}
 		}
 
-		UnityEngine.UI.Button _button;
+		protected UnityEngine.UI.Button _button;
 
-		void Awake()
+		virtual protected void Awake()
 		{
 			_button = GetComponent<UnityEngine.UI.Button>();
 			_button.onClick.AddListener(() => Click());

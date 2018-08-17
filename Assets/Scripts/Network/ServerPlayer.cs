@@ -8,5 +8,8 @@ namespace Pong.Network
         {
             NetPlayer = netPlayer;
         }
+
+        public Player ToBasePlayer()
+            => new Player(Id, Name);
     }
 }
