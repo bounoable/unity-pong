@@ -457,7 +457,7 @@ GameObject:
   - component: {fileID: 324416756}
   - component: {fileID: 324416755}
   - component: {fileID: 324416754}
-  - component: {fileID: 324416759}
+  - component: {fileID: 324416758}
   m_Layer: 5
   m_Name: MainCanvas
   m_TagString: Untagged
@@ -541,7 +541,7 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0, y: 0}
---- !u!114 &324416759
+--- !u!114 &324416758
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_PrefabParentObject: {fileID: 0}

@@ -1,9 +1,8 @@
 using UnityEngine;
-using Pong.Network;
 
 namespace Pong.GameObjects
 {
-    class Paddle: MonoBehaviour
+    class Ball: MonoBehaviour
     {
         public Vector3 Position
         {

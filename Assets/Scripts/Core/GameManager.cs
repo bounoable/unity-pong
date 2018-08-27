@@ -12,6 +12,7 @@ namespace Pong.Core
             MainMenu,
             ServerControl,
             Lobby,
+            GameSession,
         }
 
         public static GameManager Instance => GetInstance();
@@ -21,6 +22,8 @@ namespace Pong.Core
 
         public Server Server { get; private set; }
         public Client Client { get; private set; }
+
+        public GameState Session { get; private set; }
 
         public static GameManager GetInstance()
         {
@@ -95,6 +98,10 @@ namespace Pong.Core
                 case Scene.Lobby:
                     await LoadLobby();
                     break;
+                
+                case Scene.GameSession:
+                    await LoadGameSession();
+                    break;
             }
         }
 
@@ -117,6 +124,14 @@ namespace Pong.Core
             await LoadSceneByName("Lobby");
         }
 
+        async public Task LoadGameSession()
+        {
+            if (Client == null)
+                return;
+            
+            await LoadSceneByName("GameSession");
+        }
+
         async Task LoadSceneByName(string name)
         {
             AsyncOperation load = SceneManager.LoadSceneAsync(name);
@@ -124,6 +139,12 @@ namespace Pong.Core
             while (!load.isDone) {
                 await Task.Delay(100);
             }
+        }
+
+        async public void StartSession(int id, Player challenger, Player challenged)
+        {
+            Session = new GameState(id, challenger.CreateGamePlayer(), challenged.CreateGamePlayer());
+            await LoadGameSession();
         }
     }
 }

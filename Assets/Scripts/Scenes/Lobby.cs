@@ -59,6 +59,11 @@ namespace Pong.Scenes
 			Game.Client.PlayerChallenged += challenge => Dispatcher.Instance.Enqueue(() => OnPlayerChallenged(challenge));
 		}
 
+		void Start()
+		{
+			Game.Client.BaseClient.Send(new LobbyEntered(Game.Client.BaseClient.Secret), GameNet.ProtocolType.Udp);
+		}
+
 		async void Leave()
 		{
 			await Game.StopClient();

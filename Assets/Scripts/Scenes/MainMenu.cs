@@ -1,9 +1,10 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using Pong.UI;
 using Pong.Core;
+using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
 
-namespace Pong.UI
+namespace Pong.Scenes
 {
 	class MainMenu: MonoBehaviour
 	{
@@ -23,10 +24,9 @@ namespace Pong.UI
 
 			_startServerBtn.Click += () => _startServerCanvas.IsEnabled = true;
 			_startClientBtn.Click += () => _startClientCanvas.IsEnabled = true;
-			_quitBtn.Click += async () => {
-				await GameManager.Instance.PrepareQuit();
-				Application.Quit();
-			};
+			_quitBtn.Click += Application.Quit;
+
+			Screen.SetResolution(1920, 1080, FullScreenMode.Windowed);
 		}
 	}
 }

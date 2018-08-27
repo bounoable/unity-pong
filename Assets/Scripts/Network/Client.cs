@@ -1,5 +1,6 @@
 using System;
 using GameNet;
+using Pong.Core;
 using System.Linq;
 using GameNet.Messages;
 using Pong.Network.Messages;
@@ -42,6 +43,10 @@ namespace Pong.Network
             types.RegisterMessageType<ChallengeDeclined>(new ChallengeDeclinedSerializer(), message => ChallengeDeclined());
             types.RegisterMessageType<AcceptChallenge>(new AcceptChallengeSerializer());
             types.RegisterMessageType<GameStateUpdate>(new GameStateUpdateSerializer(), HandleGameStateUpdateMessage);
+            types.RegisterMessageType<SessionStarted>(new SessionStartedSerializer(), HandleSessionStartedMessage);
+            types.RegisterMessageType<PlayerDisconnected>(new PlayerDisconnectedSerializer(), HandlePlayerDisconnectedMessage);
+            types.RegisterMessageType<MovePaddle>(new MovePaddleSerializer());
+            types.RegisterMessageType<LobbyEntered>(new LobbyEnteredSerializer());
         }
 
         void RegisterEvents()
@@ -63,6 +68,7 @@ namespace Pong.Network
 
         void AddPlayer(Player player)
         {
+            _players.RemoveWhere(p => p.Id == player.Id);
             _players.Add(player);
 
             if (player.Id == PlayerId) {
@@ -70,6 +76,17 @@ namespace Pong.Network
             }
 
             EmitPlayerAdded(player);
+        }
+
+        void HandlePlayerDisconnectedMessage(PlayerDisconnected message)
+        {
+            Player player = GetPlayerById(message.Id);
+
+            if (player == null)
+                return;
+            
+            _players.Remove(player);
+            EmitPlayerRemoved(player);
         }
 
         void HandleChallengeMessage(Messages.Challenge message)
@@ -83,9 +100,20 @@ namespace Pong.Network
             PlayerChallenged(new Challenge(challenger, challenged));
         }
 
+        void HandleSessionStartedMessage(SessionStarted message)
+        {
+            Player challenger = GetPlayerById(message.ChallengerId);
+            Player challenged = GetPlayerById(message.ChallengedId);
+
+            if (challenger == null || challenged == null)
+                return;
+            
+            Dispatcher.Instance.Enqueue(() => GameManager.Instance.StartSession(message.SessionId, challenger, challenged));
+        }
+
         void HandleGameStateUpdateMessage(GameStateUpdate message)
         {
-            UnityEngine.Debug.Log("Handle game state update");
+            GameManager.Instance.Session?.Update(message);
         }
     }
 }

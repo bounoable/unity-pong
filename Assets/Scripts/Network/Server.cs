@@ -1,4 +1,5 @@
 using GameNet;
+using Pong.Core;
 using System.Net;
 using System.Linq;
 using Pong.Network;
@@ -24,13 +25,25 @@ namespace Pong.Network
                 return id;
             }
         }
+
+        public int NextSessionId
+        {
+            get
+            {
+                int id = _nextSessionId;
+                _nextSessionId++;
+                return id;
+            }
+        }
         #endregion
 
         #region fields
         int _nextPlayerId = 1;
-        readonly HashSet<ServerPlayer> _players = new HashSet<ServerPlayer>();
+        int _nextSessionId = 1;
+
+        readonly Dictionary<string, ServerPlayer> _players = new Dictionary<string, ServerPlayer>();
         readonly HashSet<Challenge> _challenges = new HashSet<Challenge>();
-        readonly HashSet<GameState> _sessions = new HashSet<GameState>();
+        readonly Dictionary<int, GameState> _sessions = new Dictionary<int, GameState>();
         #endregion
 
         public Server(GameNet.Server server)
@@ -54,31 +67,50 @@ namespace Pong.Network
             types.RegisterMessageType<ChallengeDeclined>(new ChallengeDeclinedSerializer());
             types.RegisterMessageType<AcceptChallenge>(new AcceptChallengeSerializer(), HandleAcceptChallengeMessage);
             types.RegisterMessageType<GameStateUpdate>(new GameStateUpdateSerializer());
+            types.RegisterMessageType<SessionStarted>(new SessionStartedSerializer());
+            types.RegisterMessageType<PlayerDisconnected>(new PlayerDisconnectedSerializer());
+            types.RegisterMessageType<MovePaddle>(new MovePaddleSerializer(), HandleMovePaddleMessage);
+            types.RegisterMessageType<LobbyEntered>(new LobbyEnteredSerializer(), HandleLobbyEnteredMessage);
         }
 
         void RegisterEvents()
-        {}
+        {
+            BaseServer.PlayerDisconnected += (sender, args) => {
+                ServerPlayer player = GetPlayerBySecret(args.Player.Secret);
+
+                if (player == null)
+                    return;
+                
+                _players.Remove(player.Secret);
+                
+                BaseServer.Send(new PlayerDisconnected(player.Id), ProtocolType.Udp);
+            };
+        }
 
         public void Start() => BaseServer.Start();
         public void Stop() => BaseServer.Stop();
 
         ServerPlayer GetPlayerById(int id)
-            => _players.FirstOrDefault(p => p.Id == id);
+            => _players.Values.FirstOrDefault(p => p.Id == id);
 
         ServerPlayer GetPlayerBySecret(string secret)
         {
-            GameNet.Player netPlayer = BaseServer.GetPlayerBySecret(secret);
+            ServerPlayer player;
 
-            if (netPlayer == null)
-                return null;
-            
-            foreach (ServerPlayer p in _players) {
-                if (p.NetPlayer == netPlayer) {
-                    return p;
-                }
+            if (_players.TryGetValue(secret, out player)) {
+                return player;
             }
 
             return null;
+        }
+
+        void HandleLobbyEnteredMessage(LobbyEntered message)
+        {
+            GameNet.Player player = BaseServer.GetPlayerBySecret(message.Secret);
+            
+            foreach (ServerPlayer p in _players.Values) {
+                BaseServer.SendTo(player, p.ToBasePlayer(), ProtocolType.Udp);
+            }
         }
 
         async void HandlePlayerNameMessage(PlayerName message)
@@ -96,7 +128,7 @@ namespace Pong.Network
             await BaseServer.SendTo(netPlayer, new PlayerId(player.Id));
             await Task.Delay(500);
             
-            _players.Add(player);
+            _players[player.Secret] = player;
 
             BaseServer.Send(player.ToBasePlayer(), ProtocolType.Udp);
 
@@ -163,15 +195,18 @@ namespace Pong.Network
                     continue;
                 
                 ServerPlayer challenger = GetPlayerById(challenge.Challenger.Id);
+                ServerPlayer challenged = GetPlayerById(challenge.Challenged.Id);
 
-                GameState session = new GameState(challenger.CreateGamePlayer(), player.CreateGamePlayer());
-                _sessions.Add(session);
+                GameState session = new GameState(NextSessionId, challenger.CreateGamePlayer(), challenged.CreateGamePlayer());
+                _sessions[session.Id] = session;
 
-                // BaseServer.SendTo(challenger.NetPlayer, session);
-                // BaseServer.SendTo(player.NetPlayer, session);
+                var sessionStarted = new SessionStarted(session.Id, challenger.Id, challenged.Id);
+
+                BaseServer.SendTo(challenger.NetPlayer, sessionStarted);
+                BaseServer.SendTo(challenged.NetPlayer, sessionStarted);
                 accepted = challenge;
 
-                Task.Run(() => SendGameState(session));
+                Task.Run(() => RunGame(session).ConfigureAwait(false));
                 
                 break;
             }
@@ -181,27 +216,47 @@ namespace Pong.Network
             }
         }
 
+        async Task RunGame(GameState session)
+        {
+            session.SpawnBall();
+
+            bool gameOver = false;
+
+            while (!gameOver) {
+                await Task.Delay(20);
+                session.UpdateBallPosition();
+                await SendGameState(session);
+
+                gameOver = session.Winner != null;
+            }
+        }
+
         async Task SendGameState(GameState session)
         {
             ServerPlayer serverPlayer1 = GetPlayerById(session.Player1.Id);
             ServerPlayer serverPlayer2 = GetPlayerById(session.Player2.Id);
 
-            bool gameOver = false;
+            GameStateUpdate update = session.GetUpdate();
 
-            while (!gameOver) {
-                await Task.Delay(100);
+            await Task.WhenAll(
+                BaseServer.SendTo(serverPlayer1.NetPlayer, update, GameNet.ProtocolType.Udp),
+                BaseServer.SendTo(serverPlayer2.NetPlayer, update, GameNet.ProtocolType.Udp)
+            );
+        }
 
-                GameStateUpdate update = session.GetUpdate();
+        void HandleMovePaddleMessage(MovePaddle message)
+        {
+            ServerPlayer player = GetPlayerBySecret(message.Secret);
 
-                await Task.WhenAll(
-                    BaseServer.SendTo(serverPlayer1.NetPlayer, update, GameNet.ProtocolType.Udp),
-                    BaseServer.SendTo(serverPlayer2.NetPlayer, update, GameNet.ProtocolType.Udp)
-                );
+            if (player == null)
+                return;
+            
+            GameState session;
 
-                if (session.Winner != null) {
-                    gameOver = true;
-                }
-            }
+            if (!_sessions.TryGetValue(message.SessionId, out session))
+                return;
+            
+            session.MovePaddle(player, message.Direction);
         }
     }
 }
